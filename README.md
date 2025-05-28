@@ -7,7 +7,7 @@ Absolutely! Below is a complete, professional-grade `README.md` for the **AEGIS 
 > **Ethical AI for Global Impact Systems**
 > Resilient, offline-first dashboards powered by AI for ethical decision-making in public health, governance, and climate.
 
-![AEGIS Logo](https://r2.gptseek.com/pin_review_scholar.png)
+![AEGIS Logo]
 
 ---
 
