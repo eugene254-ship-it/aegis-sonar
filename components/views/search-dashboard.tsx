@@ -1,12 +1,14 @@
 "use client"
 
 import { useState } from "react"
-import { FileText, Link, Search, Clock, Filter } from "lucide-react"
+import { FileText, Link, Search, Clock, Filter, AlertTriangle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { ScrollArea } from "@/components/ui/scroll-area"
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert"
+import { querySonar, type SonarCitation } from "@/lib/sonar-service"
 
 interface SearchResult {
   id: string
@@ -16,10 +18,10 @@ interface SearchResult {
   url: string
   relevance: number
   timestamp: string
-  citations: string[]
+  citations: SonarCitation[]
 }
 
-const searchResults: SearchResult[] = [
+const initialSearchResults: SearchResult[] = [
   {
     id: "1",
     title: "Global Climate Adaptation Strategies: A Comprehensive Analysis",
@@ -29,7 +31,11 @@ const searchResults: SearchResult[] = [
     url: "https://example.com/climate-adaptation",
     relevance: 96,
     timestamp: "2024-01-15",
-    citations: ["IPCC Report 2023", "Urban Resilience Database", "WHO Climate Health"],
+    citations: [
+      { title: "IPCC Report 2023", url: "https://example.com/ipcc", source: "ipcc.ch" },
+      { title: "Urban Resilience Database", url: "https://example.com/urban", source: "resilience.org" },
+      { title: "WHO Climate Health", url: "https://example.com/who", source: "who.int" },
+    ],
   },
   {
     id: "2",
@@ -40,7 +46,11 @@ const searchResults: SearchResult[] = [
     url: "https://example.com/healthcare-ai",
     relevance: 94,
     timestamp: "2024-01-12",
-    citations: ["Medical AI Review", "Healthcare Optimization", "Patient Outcome Studies"],
+    citations: [
+      { title: "Medical AI Review", url: "https://example.com/medical", source: "pubmed.ncbi.nlm.nih.gov" },
+      { title: "Healthcare Optimization", url: "https://example.com/optimization", source: "health.org" },
+      { title: "Patient Outcome Studies", url: "https://example.com/outcomes", source: "nejm.org" },
+    ],
   },
   {
     id: "3",
@@ -51,20 +61,71 @@ const searchResults: SearchResult[] = [
     url: "https://example.com/digital-democracy",
     relevance: 91,
     timestamp: "2024-01-10",
-    citations: ["Democracy Index", "Digital Governance", "Citizen Engagement Studies"],
+    citations: [
+      { title: "Democracy Index", url: "https://example.com/democracy", source: "economist.com" },
+      { title: "Digital Governance", url: "https://example.com/digital", source: "governance.org" },
+      { title: "Citizen Engagement Studies", url: "https://example.com/engagement", source: "civictech.org" },
+    ],
   },
 ]
 
 export function SearchDashboard() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isSearching, setIsSearching] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [searchResults, setSearchResults] = useState<SearchResult[]>(initialSearchResults)
+  const [recentSearches, setRecentSearches] = useState<string[]>([
+    "carbon pricing effectiveness urban areas",
+    "healthcare AI resource allocation",
+    "digital democracy participation rates",
+  ])
+  const [selectedFilters, setSelectedFilters] = useState<string[]>(["climate", "health"])
 
-  const handleSearch = () => {
+  const handleSearch = async () => {
     if (!searchQuery.trim()) return
     setIsSearching(true)
-    setTimeout(() => {
+    setError(null)
+
+    try {
+      const response = await querySonar({
+        query: searchQuery,
+        mode: "search_citation",
+        context: {
+          sectors: selectedFilters.length > 0 ? selectedFilters : undefined,
+        },
+      })
+
+      // Create a new search result from the response
+      const newResult: SearchResult = {
+        id: Date.now().toString(),
+        title: searchQuery,
+        snippet: response.answer.substring(0, 200) + (response.answer.length > 200 ? "..." : ""),
+        source: "Sonar Search",
+        url: "#",
+        relevance: response.confidence || 95,
+        timestamp: new Date().toISOString(),
+        citations: response.citations,
+      }
+
+      setSearchResults([newResult, ...searchResults])
+
+      // Add to recent searches if not already there
+      if (!recentSearches.includes(searchQuery)) {
+        setRecentSearches([searchQuery, ...recentSearches.slice(0, 4)])
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to process search")
+    } finally {
       setIsSearching(false)
-    }, 1500)
+    }
+  }
+
+  const toggleFilter = (filter: string) => {
+    if (selectedFilters.includes(filter)) {
+      setSelectedFilters(selectedFilters.filter((f) => f !== filter))
+    } else {
+      setSelectedFilters([...selectedFilters, filter])
+    }
   }
 
   return (
@@ -104,19 +165,26 @@ export function SearchDashboard() {
               <Filter className="h-4 w-4" />
             </Button>
           </div>
+
+          {error && (
+            <Alert variant="destructive">
+              <AlertTriangle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+
           <div className="flex gap-2 flex-wrap">
-            <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
-              Climate Policy
-            </Badge>
-            <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
-              Public Health
-            </Badge>
-            <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
-              Governance
-            </Badge>
-            <Badge variant="secondary" className="cursor-pointer hover:bg-secondary/80">
-              AI Ethics
-            </Badge>
+            {["Climate Policy", "Public Health", "Governance", "AI Ethics", "Economy", "Education"].map((filter) => (
+              <Badge
+                key={filter}
+                variant={selectedFilters.includes(filter.toLowerCase()) ? "default" : "secondary"}
+                className="cursor-pointer hover:bg-secondary/80"
+                onClick={() => toggleFilter(filter.toLowerCase())}
+              >
+                {filter}
+              </Badge>
+            ))}
           </div>
         </CardContent>
       </Card>
@@ -145,18 +213,24 @@ export function SearchDashboard() {
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="h-3 w-3" />
-                          {result.timestamp}
+                          {typeof result.timestamp === "string" && result.timestamp.includes("T")
+                            ? new Date(result.timestamp).toLocaleDateString()
+                            : result.timestamp}
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Link className="h-3 w-3" />
-                          View Source
-                        </span>
+                        {result.url !== "#" && (
+                          <span className="flex items-center gap-1">
+                            <Link className="h-3 w-3" />
+                            <a href={result.url} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                              View Source
+                            </a>
+                          </span>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-1">
                         <span className="text-xs font-medium text-muted-foreground mr-2">Citations:</span>
                         {result.citations.map((citation, index) => (
                           <Badge key={index} variant="outline" className="text-xs">
-                            {citation}
+                            {citation.source}
                           </Badge>
                         ))}
                       </div>
@@ -204,27 +278,23 @@ export function SearchDashboard() {
         </CardHeader>
         <CardContent>
           <div className="space-y-2">
-            <div className="flex items-center justify-between p-2 rounded hover:bg-muted cursor-pointer">
-              <span className="text-sm">carbon pricing effectiveness urban areas</span>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">23 results</Badge>
-                <Clock className="h-3 w-3 text-muted-foreground" />
+            {recentSearches.map((search, index) => (
+              <div
+                key={index}
+                className="flex items-center justify-between p-2 rounded hover:bg-muted cursor-pointer"
+                onClick={() => {
+                  setSearchQuery(search)
+                }}
+              >
+                <span className="text-sm">{search}</span>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary">
+                    {index === 0 ? "New" : `${Math.floor(Math.random() * 30) + 10} results`}
+                  </Badge>
+                  <Clock className="h-3 w-3 text-muted-foreground" />
+                </div>
               </div>
-            </div>
-            <div className="flex items-center justify-between p-2 rounded hover:bg-muted cursor-pointer">
-              <span className="text-sm">healthcare AI resource allocation</span>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">41 results</Badge>
-                <Clock className="h-3 w-3 text-muted-foreground" />
-              </div>
-            </div>
-            <div className="flex items-center justify-between p-2 rounded hover:bg-muted cursor-pointer">
-              <span className="text-sm">digital democracy participation rates</span>
-              <div className="flex items-center gap-2">
-                <Badge variant="secondary">18 results</Badge>
-                <Clock className="h-3 w-3 text-muted-foreground" />
-              </div>
-            </div>
+            ))}
           </div>
         </CardContent>
       </Card>
