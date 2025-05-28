@@ -4,17 +4,12 @@
 > **Ethical AI for Global Impact Systems**
 > Resilient, offline-first dashboards powered by AI for ethical decision-making in public health, governance, and climate.
 
-![AEGIS Logo]
+🚀 Overview
+AEGIS is a decentralized, progressive web app (PWA) designed to support ethical and transparent decision-making across sectors like public health, climate resilience, and governance. This frontend connects to powerful AI reasoning systems via the Perplexity Sonar API, enabling users to ask complex questions and get traceable, cited, context-aware answers.
 
-AEGIS 
----
+Built for everyone — from rural health officers to national policy teams — AEGIS functions online and offline with a clean, modular UI.
 
-## 🚀 Overview
-
-**AEGIS** is a decentralized, progressive web app (PWA) designed to support **ethical and transparent decision-making** across sectors like public health, climate resilience, and governance. This frontend connects to powerful AI reasoning systems via the **Perplexity Sonar API**, enabling users to ask complex questions and get **traceable, cited, context-aware answers.**
-
-Built for everyone — from rural health officers to national policy teams — AEGIS functions **online and offline** with a clean, modular UI.
-
+🔗 Live Application: https://www.aegis.rocks
 ---
 
 ## 🧩 Key Features
