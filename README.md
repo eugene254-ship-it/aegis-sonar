@@ -1,6 +1,3 @@
-Absolutely! Below is a complete, professional-grade `README.md` for the **AEGIS frontend** project. It’s tailored for contributors, developers, or stakeholders who want to understand the purpose, setup, structure, and contribution process.
-
----
 
 # 🌐 AEGIS Frontend
 
