@@ -108,7 +108,7 @@ Frontend communicates with a backend endpoint `/api/sonar-query`, which:
 * Handles authentication, error responses, and formatting
 * Returns structured insights, citations, and reasoning steps
 
-> Learn more in the [Backend Readme →](../backend/README.md)
+> Learn more in the [Backend Readme → https://github.com/grogu-oss/sonar-api ](../backend/README.md)
 
 ---
 
